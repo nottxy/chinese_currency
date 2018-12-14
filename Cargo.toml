@@ -1,0 +1,13 @@
+[package]
+name = "chinese_currency"
+version = "0.1.0"
+license = "MIT/Apache-2.0"
+keywords = ["currency", "number"]
+description = "chinese uppercase currency"
+homepage = "https://github.com/nottxy/chinese_currency"
+repository = "https://github.com/nottxy/chinese_currency"
+documentation = "https://docs.rs/chinese_currency"
+authors = ["Bob <nottxy@gmail.com>"]
+edition = "2018"
+
+[dependencies]
