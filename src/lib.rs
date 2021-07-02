@@ -1,6 +1,4 @@
-const NUMS: &[char] = &[
-    '零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖',
-];
+const NUMS: &[char] = &['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
 
 const POS_001: char = '分';
 const POS_01: char = '角';
@@ -14,13 +12,21 @@ const POS_1M: char = '亿';
 
 const NUM_EXACTLY: char = '整';
 
+const MINUS: char = '负';
+
 pub trait ChineseCurrency {
     fn to_chinese_currency(self) -> String;
 }
 
-impl ChineseCurrency for usize {
+impl ChineseCurrency for isize {
     fn to_chinese_currency(self) -> String {
-        Builder::new(self).build()
+        let (value, is_minus) = if self < 0 {
+            (-self as usize, true)
+        } else {
+            (self as usize, false)
+        };
+
+        Builder::new(value, is_minus).build()
     }
 }
 
@@ -28,6 +34,7 @@ struct Builder {
     position_groups: PositionGroups,
     pos_01: usize,
     pos_001: usize,
+    is_minus: bool,
 }
 
 struct PositionGroups {
@@ -47,7 +54,7 @@ struct Rank {
 }
 
 impl Builder {
-    fn new(mut i: usize) -> Builder {
+    fn new(mut i: usize, is_minus: bool) -> Builder {
         let pos_001 = i % 10;
         i /= 10;
 
@@ -60,11 +67,16 @@ impl Builder {
             position_groups,
             pos_01,
             pos_001,
+            is_minus,
         }
     }
 
     fn build(self) -> String {
         let mut buf = String::default();
+
+        if self.is_minus {
+            buf.push(MINUS);
+        }
 
         let is_empty = self.position_groups.build(&mut buf);
 
@@ -217,7 +229,7 @@ impl Rank {
 
 #[cfg(test)]
 mod tests {
-    use super::Rank;
+    use super::{ChineseCurrency, Rank};
 
     #[test]
     fn smoke_rank() {
@@ -228,5 +240,46 @@ mod tests {
         assert_eq!(Rank::rank_to_string(4), "亿亿");
         assert_eq!(Rank::rank_to_string(5), "万亿亿");
         assert_eq!(Rank::rank_to_string(6), "亿亿亿");
+    }
+
+    #[test]
+    fn smoke_to_chinese_currency() {
+        assert_eq!(0.to_chinese_currency(), "零圆整");
+        assert_eq!(1.to_chinese_currency(), "零壹分");
+        assert_eq!(21.to_chinese_currency(), "贰角壹分");
+        assert_eq!(20.to_chinese_currency(), "贰角");
+        assert_eq!(321.to_chinese_currency(), "叁圆贰角壹分");
+        assert_eq!(300.to_chinese_currency(), "叁圆整");
+        assert_eq!(4321.to_chinese_currency(), "肆拾叁圆贰角壹分");
+        assert_eq!(54321.to_chinese_currency(), "伍佰肆拾叁圆贰角壹分");
+        assert_eq!(654321.to_chinese_currency(), "陆仟伍佰肆拾叁圆贰角壹分");
+        assert_eq!(
+            7654321.to_chinese_currency(),
+            "柒万陆仟伍佰肆拾叁圆贰角壹分"
+        );
+        assert_eq!(
+            87654321.to_chinese_currency(),
+            "捌拾柒万陆仟伍佰肆拾叁圆贰角壹分"
+        );
+        assert_eq!(
+            987654321.to_chinese_currency(),
+            "玖佰捌拾柒万陆仟伍佰肆拾叁圆贰角壹分"
+        );
+        assert_eq!(
+            8987654321.to_chinese_currency(),
+            "捌仟玖佰捌拾柒万陆仟伍佰肆拾叁圆贰角壹分"
+        );
+        assert_eq!(
+            78987654321.to_chinese_currency(),
+            "柒亿捌仟玖佰捌拾柒万陆仟伍佰肆拾叁圆贰角壹分"
+        );
+        assert_eq!(
+            70987654321.to_chinese_currency(),
+            "柒亿零玖佰捌拾柒万陆仟伍佰肆拾叁圆贰角壹分"
+        );
+        assert_eq!(
+            (-70987654321).to_chinese_currency(),
+            "负柒亿零玖佰捌拾柒万陆仟伍佰肆拾叁圆贰角壹分"
+        );
     }
 }
